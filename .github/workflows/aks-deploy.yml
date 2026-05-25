@@ -44,9 +44,29 @@ jobs:
 
     - name: Get AKS Credentials
       run: |
-        az aks get-credentials --resource-group $RESOURCE_GROUP --name $AKS_CLUSTER --overwrite-existing
+        az aks get-credentials \
+          --resource-group $RESOURCE_GROUP \
+          --name $AKS_CLUSTER \
+          --overwrite-existing
+
+    - name: Install kubelogin
+      run: |
+        curl -LO https://github.com/Azure/kubelogin/releases/latest/download/kubelogin-linux-amd64.zip
+        unzip kubelogin-linux-amd64.zip
+        sudo mv bin/linux_amd64/kubelogin /usr/local/bin/
+
+    - name: Convert kubeconfig
+      run: |
+        kubelogin convert-kubeconfig -l azurecli
 
     - name: Deploy to AKS
       run: |
-        kubectl create deployment flask-app --image=$ACR_NAME.azurecr.io/$IMAGE_NAME:${{ github.sha }} --dry-run=client -o yaml | kubectl apply -f -
-        kubectl expose deployment flask-app --type=LoadBalancer --port=80 --target-port=5000 --dry-run=client -o yaml | kubectl apply -f -
+        kubectl create deployment flask-app \
+          --image=$ACR_NAME.azurecr.io/$IMAGE_NAME:${{ github.sha }} \
+          --dry-run=client -o yaml | kubectl apply -f -
+
+        kubectl expose deployment flask-app \
+          --type=LoadBalancer \
+          --port=80 \
+          --target-port=5000 \
+          --dry-run=client -o yaml | kubectl apply -f -
